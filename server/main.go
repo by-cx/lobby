@@ -147,14 +147,22 @@ func (d *Discoveries) GetAll() []Discovery {
 	return d.activeServers
 }
 
-func (d *Discoveries) Filter(labelFilter string) []Discovery {
+func (d *Discoveries) Filter(labelsFilter []string) []Discovery {
 	newSet := []Discovery{}
 
-	if len(labelFilter) > 0 {
+	var found bool
+	if len(labelsFilter) > 0 {
 		for _, discovery := range d.activeServers {
+			found = false
 			for _, label := range discovery.Labels {
-				if label == labelFilter {
-					newSet = append(newSet, discovery)
+				for _, labelFilter := range labelsFilter {
+					if label == labelFilter {
+						newSet = append(newSet, discovery)
+						found = true
+						break
+					}
+				}
+				if found {
 					break
 				}
 			}

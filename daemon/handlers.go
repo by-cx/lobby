@@ -2,18 +2,20 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo"
 	"github.com/rosti-cz/server_lobby/server"
 )
 
 func listHandler(c echo.Context) error {
-	label := c.QueryParam("label")
+	labels := c.QueryParam("labels")
 
 	var discoveries []server.Discovery
 
-	if len(label) > 0 {
-		discoveries = discoveryStorage.Filter(label)
+	if len(labels) > 0 {
+		labelsFilterSlice := strings.Split(labels, ",")
+		discoveries = discoveryStorage.Filter(labelsFilterSlice)
 	} else {
 		discoveries = discoveryStorage.GetAll()
 	}
@@ -22,7 +24,9 @@ func listHandler(c echo.Context) error {
 }
 
 func prometheusHandler(c echo.Context) error {
-	services := preparePrometheusOutput(discoveryStorage.GetAll())
+	name := c.Param("name")
+
+	services := preparePrometheusOutput(name, discoveryStorage.GetAll())
 
 	return c.JSONPretty(http.StatusOK, services, "  ")
 }

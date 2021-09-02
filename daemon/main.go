@@ -141,7 +141,7 @@ func main() {
 	// Routes
 	e.GET("/", listHandler)
 	e.GET("/v1/", listHandler)
-	e.GET("/v1/prometheus", prometheusHandler)
+	e.GET("/v1/prometheus/:name", prometheusHandler)
 
 	// e.GET("/template/:template", func(c echo.Context) error {
 	// 	templateName := c.Param("template")

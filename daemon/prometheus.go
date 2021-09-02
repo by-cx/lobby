@@ -29,17 +29,18 @@ type PrometheusService struct {
 // preparePrometheusOutput returns PrometheusServices which is struct compatible to what Prometheus expects
 // labels starting "ne:" will be used as NodeExporter labels. Label "ne:port:9123" will be used as port
 // used in the targets field. Same for "ne:host:1.2.3.4".
-func preparePrometheusOutput(discoveries []server.Discovery) PrometheusServices {
+func preparePrometheusOutput(name string, discoveries []server.Discovery) PrometheusServices {
 	services := PrometheusServices{}
 
 	for _, discovery := range discoveries {
 		port := strconv.Itoa(int(config.NodeExporterPort))
 		host := discovery.Hostname
+		var add bool // add to the prometheus output when there is at least one prometheus related label
 
 		labels := map[string]string{}
 
-		for _, label := range discovery.FindLabels("ne") {
-			trimmed := strings.TrimPrefix(label, "ne:")
+		for _, label := range discovery.FindLabels("prometheus:" + name) {
+			trimmed := strings.TrimPrefix(label, "prometheus:"+name+":")
 			parts := strings.SplitN(trimmed, ":", 2)
 			if len(parts) == 2 {
 				if parts[0] == "port" {
@@ -49,15 +50,28 @@ func preparePrometheusOutput(discoveries []server.Discovery) PrometheusServices 
 				} else {
 					labels[parts[0]] = parts[1]
 				}
+				add = true
 			}
 		}
 
-		service := PrometheusService{
-			Targets: []string{host + ":" + port},
-			Labels:  labels,
+		// This has to be checked here again because FindLabels adds : at the end of the label name.
+		if !add {
+			for _, label := range discovery.Labels {
+				if label == "prometheus:"+name {
+					add = true
+					break
+				}
+			}
 		}
 
-		services = append(services, service)
+		if add {
+			service := PrometheusService{
+				Targets: []string{host + ":" + port},
+				Labels:  labels,
+			}
+
+			services = append(services, service)
+		}
 
 	}
 
