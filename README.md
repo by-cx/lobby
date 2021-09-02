@@ -7,8 +7,8 @@
 * [X] labels in directory
     /etc/lobby/labels
     One file per one label
-* [ ] Deregistration
-* [ ] Deregister when the daemon exists
+* [X] Deregistration
+* [X] Deregister when the daemon exits
 * [ ] Separate the NATS code so it can support multiple backend/drivers
 * [ ] Documentation
 * [ ] Tests
