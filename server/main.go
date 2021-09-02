@@ -105,6 +105,10 @@ func (d *Discoveries) Refresh(hostname string) {
 
 // Delete removes server identified by hostname from the storage
 func (d *Discoveries) Delete(hostname string) {
+	if !d.Exist(hostname) {
+		return
+	}
+
 	if d.LogChannel != nil {
 		d.LogChannel <- fmt.Sprintf("removing %s", hostname)
 	}

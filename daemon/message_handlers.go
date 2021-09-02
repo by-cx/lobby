@@ -6,22 +6,24 @@ import (
 	"log"
 
 	"github.com/nats-io/nats.go"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 // discoveryHandler accepts discovery message and
 func discoveryHandler(m *nats.Msg) {
-	message := server.Discovery{}
+	message := discoveryEnvelope{}
 	err := json.Unmarshal(m.Data, &message)
 	if err != nil {
 		log.Println(fmt.Errorf("decoding message error: %v", err))
 	}
 
-	err = message.Validate()
+	err = message.Discovery.Validate()
 	if err != nil {
 		log.Println(fmt.Errorf("validation error: %v", err))
 	}
 
-	discoveryStorage.Add(message)
-
+	if message.Message == "hi" {
+		discoveryStorage.Add(message.Discovery)
+	} else if message.Message == "goodbye" {
+		discoveryStorage.Delete(message.Discovery.Hostname)
+	}
 }

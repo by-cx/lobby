@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/labstack/echo"
@@ -15,6 +19,8 @@ import (
 var discoveryStorage server.Discoveries = server.Discoveries{}
 
 var config Config
+
+var shuttingDown bool
 
 func init() {
 	discoveryStorage.LogChannel = make(chan string)
@@ -29,15 +35,43 @@ func cleanDiscoveryPool() {
 
 }
 
+// sendGoodbyePacket is almost same as sendDiscoveryPacket but it's not running in loop
+// and it adds goodbye message so other nodes know this node is gonna die.
+func sendGoodbyePacket(nc *nats.Conn) {
+	discovery, err := getIdentification()
+	if err != nil {
+		log.Printf("sending discovery identification error: %v\n", err)
+	}
+
+	envelope := discoveryEnvelope{
+		Discovery: discovery,
+		Message:   "goodbye",
+	}
+
+	data, err := envelope.Bytes()
+	if err != nil {
+		log.Printf("sending discovery formating message error: %v\n", err)
+	}
+	err = nc.Publish(config.NATSDiscoveryChannel, data)
+	if err != nil {
+		log.Printf("sending discovery error: %v\n", err)
+	}
+}
+
 // sendDisoveryPacket sends discovery packet regularly so the network know we exist
-func sendDisoveryPacket(nc *nats.Conn) {
+func sendDiscoveryPacket(nc *nats.Conn) {
 	for {
 		discovery, err := getIdentification()
 		if err != nil {
 			log.Printf("sending discovery identification error: %v\n", err)
 		}
 
-		data, err := discovery.Bytes()
+		envelope := discoveryEnvelope{
+			Discovery: discovery,
+			Message:   "hi",
+		}
+
+		data, err := envelope.Bytes()
 		if err != nil {
 			log.Printf("sending discovery formating message error: %v\n", err)
 		}
@@ -46,6 +80,10 @@ func sendDisoveryPacket(nc *nats.Conn) {
 			log.Printf("sending discovery error: %v\n", err)
 		}
 		time.Sleep(time.Duration(config.KeepAlive) * time.Second)
+
+		if shuttingDown {
+			break
+		}
 	}
 }
 
@@ -89,7 +127,7 @@ func main() {
 	}
 
 	go cleanDiscoveryPool()
-	go sendDisoveryPacket(nc)
+	go sendDiscoveryPacket(nc)
 
 	// --------
 	// REST API
@@ -141,6 +179,22 @@ func main() {
 	// 	return c.String(http.StatusOK, body.String())
 	// })
 
+	// ------------------------------
+	// Termination signals processing
+	// ------------------------------
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func(nc *nats.Conn, e *echo.Echo) {
+		sig := <-signals
+		shuttingDown = true
+		log.Printf("%s signal received, sending goodbye packet\n", sig.String())
+		sendGoodbyePacket(nc)
+		time.Sleep(5 * time.Second) // we wait for a few seconds to let background jobs to finish their job
+		e.Shutdown(context.TODO())
+	}(nc, e)
+
 	// Start server
-	e.Logger.Fatal(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))
+	e.Logger.Error(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))
 }
