@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -12,18 +11,33 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/nats-io/nats.go"
+	"github.com/rosti-cz/server_lobby/common"
+	"github.com/rosti-cz/server_lobby/nats_driver"
 	"github.com/rosti-cz/server_lobby/server"
 )
 
 var discoveryStorage server.Discoveries = server.Discoveries{}
+var driver common.Driver
 
 var config Config
 
 var shuttingDown bool
 
 func init() {
+	// Load config from environment variables
+	config = *GetConfig()
+
+	// Setup discovery storage
 	discoveryStorage.LogChannel = make(chan string)
+	discoveryStorage.TTL = config.TTL
+
+	// Setup driver
+	driver = &nats_driver.Driver{
+		NATSUrl:              config.NATSURL,
+		NATSDiscoveryChannel: config.NATSDiscoveryChannel,
+
+		LogChannel: discoveryStorage.LogChannel,
+	}
 }
 
 // cleanDiscoveryPool clears the local server map and keeps only the alive servers
@@ -37,47 +51,29 @@ func cleanDiscoveryPool() {
 
 // sendGoodbyePacket is almost same as sendDiscoveryPacket but it's not running in loop
 // and it adds goodbye message so other nodes know this node is gonna die.
-func sendGoodbyePacket(nc *nats.Conn) {
+func sendGoodbyePacket() {
 	discovery, err := getIdentification()
 	if err != nil {
 		log.Printf("sending discovery identification error: %v\n", err)
 	}
 
-	envelope := discoveryEnvelope{
-		Discovery: discovery,
-		Message:   "goodbye",
-	}
-
-	data, err := envelope.Bytes()
+	err = driver.SendGoodbyePacket(discovery)
 	if err != nil {
-		log.Printf("sending discovery formating message error: %v\n", err)
-	}
-	err = nc.Publish(config.NATSDiscoveryChannel, data)
-	if err != nil {
-		log.Printf("sending discovery error: %v\n", err)
+		log.Println(err)
 	}
 }
 
 // sendDisoveryPacket sends discovery packet regularly so the network know we exist
-func sendDiscoveryPacket(nc *nats.Conn) {
+func sendDiscoveryPacket() {
 	for {
 		discovery, err := getIdentification()
 		if err != nil {
 			log.Printf("sending discovery identification error: %v\n", err)
 		}
 
-		envelope := discoveryEnvelope{
-			Discovery: discovery,
-			Message:   "hi",
-		}
-
-		data, err := envelope.Bytes()
+		err = driver.SendDiscoveryPacket(discovery)
 		if err != nil {
-			log.Printf("sending discovery formating message error: %v\n", err)
-		}
-		err = nc.Publish(config.NATSDiscoveryChannel, data)
-		if err != nil {
-			log.Printf("sending discovery error: %v\n", err)
+			log.Println(err)
 		}
 		time.Sleep(time.Duration(config.KeepAlive) * time.Second)
 
@@ -100,34 +96,35 @@ func main() {
 
 	// Closing the logging channel
 	defer close(discoveryStorage.LogChannel)
-
-	discoveryStorage.TTL = config.TTL
-
-	// Load config from environment variables
-	config = *GetConfig()
+	defer driver.Close()
 
 	// ------------------------
 	// Server discovering stuff
 	// ------------------------
 
 	// Connect to the NATS service
-	nc, err := nats.Connect(config.NATSURL)
+	driver.RegisterSubscribeFunction(func(d server.Discovery) {
+		discoveryStorage.Add(d)
+	})
+	driver.RegisterUnsubscribeFunction(func(d server.Discovery) {
+		discoveryStorage.Delete(d.Hostname)
+	})
+
+	err = driver.Init()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer nc.Drain()
 
 	go printDiscoveryLogs()
 
-	// Subscribe
-	log.Println("> discovery channel")
-	_, err = nc.Subscribe(config.NATSDiscoveryChannel, discoveryHandler)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	go cleanDiscoveryPool()
-	go sendDiscoveryPacket(nc)
+
+	// If config.Register is false this instance won't be registered with other nodes
+	if config.Register {
+		go sendDiscoveryPacket()
+	} else {
+		log.Println("standalone mode, I won't register myself")
+	}
 
 	// --------
 	// REST API
@@ -142,25 +139,9 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.GET("/", func(c echo.Context) error {
-		label := c.QueryParam("label")
-
-		var discoveries []server.Discovery
-
-		if len(label) > 0 {
-			discoveries = discoveryStorage.Filter(label)
-		} else {
-			discoveries = discoveryStorage.GetAll()
-		}
-
-		return c.JSONPretty(200, discoveries, "  ")
-	})
-
-	e.GET("/prometheus", func(c echo.Context) error {
-		services := preparePrometheusOutput(discoveryStorage.GetAll())
-
-		return c.JSONPretty(http.StatusOK, services, "  ")
-	})
+	e.GET("/", listHandler)
+	e.GET("/v1/", listHandler)
+	e.GET("/v1/prometheus", prometheusHandler)
 
 	// e.GET("/template/:template", func(c echo.Context) error {
 	// 	templateName := c.Param("template")
@@ -186,14 +167,18 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	go func(nc *nats.Conn, e *echo.Echo) {
+	go func(e *echo.Echo, config Config) {
 		sig := <-signals
 		shuttingDown = true
-		log.Printf("%s signal received, sending goodbye packet\n", sig.String())
-		sendGoodbyePacket(nc)
-		time.Sleep(5 * time.Second) // we wait for a few seconds to let background jobs to finish their job
+		if config.Register {
+			log.Printf("%s signal received, sending goodbye packet\n", sig.String())
+			sendGoodbyePacket()
+			time.Sleep(5 * time.Second) // we wait for a few seconds to let background jobs to finish their job
+		} else {
+			log.Printf("%s signal received", sig.String())
+		}
 		e.Shutdown(context.TODO())
-	}(nc, e)
+	}(e, config)
 
 	// Start server
 	e.Logger.Error(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))

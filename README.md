@@ -12,3 +12,4 @@
 * [ ] Separate the NATS code so it can support multiple backend/drivers
 * [ ] Documentation
 * [ ] Tests
+* [ ] Command hooks - script or list of scripts that are triggered when discovery status has changed
