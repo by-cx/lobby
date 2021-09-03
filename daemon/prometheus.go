@@ -65,8 +65,14 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 		}
 
 		if add {
+			// Omit port part if "-" is set
+			target := host + ":" + port
+			if port == "-" {
+				target = host
+			}
+
 			service := PrometheusService{
-				Targets: []string{host + ":" + port},
+				Targets: []string{target},
 				Labels:  labels,
 			}
 

@@ -100,6 +100,9 @@ Let's check this:
 
     prometheus:nodeexporter:host:192.168.1.1
     prometheus:nodeexporter:port:9100
+    prometheus:nodeexporter:location:prague
+
+If you set port to *-* lobby daemon omits port entirely from the output.
 
 When you open URL http://localhost:1313/v1/prometheus/nodeexporter it returns this:
 
@@ -140,21 +143,15 @@ So far the REST API is super simple and it has only two endpoints:
 
     GET /                     # Returns list of all discovered servers and their labels.
     GET /v1/                  # Same as /
+    GET /v1/?labels=LABELS    # output will be filtered based on one or multiple labels separated by comma
     GET /v1/prometheus/:name  # Generates output for Prometheus's SD config, name is group of the monitoring services described above.
 
 ## TODO
 
-* [X] filtering based on labels
-* [X] Output for prometheus
-    https://prometheus.io/docs/prometheus/latest/configuration/configuration/#http_sd_config
-    ~~This should be implemented as a template in /etc/lobby/templates~~
-* [X] labels in directory
-    /etc/lobby/labels
-    One file per one label
-* [X] Deregistration
-* [X] Deregister when the daemon exits
-* [X] Separate the NATS code so it can support multiple backend/drivers
-* [X] Documentation
 * [ ] Tests
 * [ ] Command hooks - script or list of scripts that are triggered when discovery status has changed
+* [ ] Support for multiple active backend drivers
+* [ ] SNS driver
+
+
 
