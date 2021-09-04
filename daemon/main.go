@@ -116,7 +116,6 @@ func main() {
 	}
 
 	go printDiscoveryLogs()
-
 	go cleanDiscoveryPool()
 
 	// If config.Register is false this instance won't be registered with other nodes
@@ -142,23 +141,6 @@ func main() {
 	e.GET("/", listHandler)
 	e.GET("/v1/", listHandler)
 	e.GET("/v1/prometheus/:name", prometheusHandler)
-
-	// e.GET("/template/:template", func(c echo.Context) error {
-	// 	templateName := c.Param("template")
-	// 	discoveries := discoveryStorage.GetAll()
-	// 	var body bytes.Buffer
-
-	// 	tmpl, err := template.New("main").ParseFiles(path.Join(config.TemplatesPath, templateName))
-	// 	if err != nil {
-	// 		return c.String(http.StatusInternalServerError, err.Error())
-	// 	}
-	// 	err = tmpl.Execute(&body, &discoveries)
-	// 	if err != nil {
-	// 		return c.String(http.StatusInternalServerError, err.Error())
-	// 	}
-
-	// 	return c.String(http.StatusOK, body.String())
-	// })
 
 	// ------------------------------
 	// Termination signals processing
