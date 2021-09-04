@@ -76,21 +76,22 @@ service file. It doesn't need to access almost anything in your system.
 
 There are other config directives you can use to fine-tune lobbyd to exactly what you need.
 
-| Environment variable   | Type   | Default           | Required | Note                                                                                                                                                    |
-| ---------------------- | ------ | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TOKEN                  | string |                   | no       | Authentication token for API, if empty auth is disabled                                                                                                 |
-| HOST                   | string | 127.0.0.1         | no       | IP address used for the REST server to listen                                                                                                           |
-| PORT                   | int    | 1313              | no       | Port related to the address above                                                                                                                       |
-| NATS_URL               | string |                   | yes      | NATS URL used to connect to the NATS server                                                                                                             |
-| NATS_DISCOVERY_CHANNEL | string | lobby.discovery   | no       | Channel where the keep-alive packets are sent                                                                                                           |
-| LABELS                 | string |                   | no       | List of labels, labels should be separated by comma                                                                                                     |
-| LABELS_PATH            | string | /etc/lobby/labels | no       | Path where filesystem based labels are located, one label per line, filename is not important for lobby                                                 |
-| HOSTNAME               | string |                   | no       | Override local machine's hostname                                                                                                                       |
-| CLEAN_EVERY            | int    | 15                | no       | How often to clean the list of discovered servers to get rid of the not alive ones [secs]                                                               |
-| KEEP_ALIVE             | int    | 5                 | no       | how often to send the keep-alive discovery message with all available information [secs]                                                                |
-| TTL                    | int    | 30                | no       | After how many secs is discovery record considered as invalid                                                                                           |
-| NODE_EXPORTER_PORT     | int    | 9100              | no       | Default port where node_exporter listens on all registered servers, this is used when the special prometheus labels doesn't contain port                |
-| REGISTER               | bool   | true              | no       | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
+| Environment variable    | Type   | Default           | Required | Note                                                                                                                                                    |
+| ----------------------- | ------ | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TOKEN                   | string |                   | no       | Authentication token for API, if empty auth is disabled                                                                                                 |
+| HOST                    | string | 127.0.0.1         | no       | IP address used for the REST server to listen                                                                                                           |
+| PORT                    | int    | 1313              | no       | Port related to the address above                                                                                                                       |
+| NATS_URL                | string |                   | yes      | NATS URL used to connect to the NATS server                                                                                                             |
+| NATS_DISCOVERY_CHANNEL  | string | lobby.discovery   | no       | Channel where the keep-alive packets are sent                                                                                                           |
+| LABELS                  | string |                   | no       | List of labels, labels should be separated by comma                                                                                                     |
+| LABELS_PATH             | string | /etc/lobby/labels | no       | Path where filesystem based labels are located, one label per line, filename is not important for lobby                                                 |
+| RUNTIME_LABELS_FILENAME | string | _runtime          | no       | Filename for file created in LabelsPath where runtime labels will be added                                                                              |
+| HOSTNAME                | string |                   | no       | Override local machine's hostname                                                                                                                       |
+| CLEAN_EVERY             | int    | 15                | no       | How often to clean the list of discovered servers to get rid of the not alive ones [secs]                                                               |
+| KEEP_ALIVE              | int    | 5                 | no       | how often to send the keep-alive discovery message with all available information [secs]                                                                |
+| TTL                     | int    | 30                | no       | After how many secs is discovery record considered as invalid                                                                                           |
+| NODE_EXPORTER_PORT      | int    | 9100              | no       | Default port where node_exporter listens on all registered servers, this is used when the special prometheus labels doesn't contain port                |
+| REGISTER                | bool   | true              | no       | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
 
 ### Service discovery for Prometheus
 
@@ -141,10 +142,15 @@ At least one prometheus label has to be set to export the monitoring service in 
 
 So far the REST API is super simple and it has only two endpoints:
 
-    GET /                     # Returns list of all discovered servers and their labels.
-    GET /v1/                  # Same as /
-    GET /v1/?labels=LABELS    # output will be filtered based on one or multiple labels separated by comma
-    GET /v1/prometheus/:name  # Generates output for Prometheus's SD config, name is group of the monitoring services described above.
+    GET /                                # Same as /v1/discoveries
+    GET /v1/discovery                    # Returns current local discovery packet
+    GET /v1/discoveries                  # Returns list of all discovered servers and their labels.
+    GET /v1/discoveries?labels=LABELS    # output will be filtered based on one or multiple labels separated by comma
+    GET /v1/prometheus/:name             # Generates output for Prometheus's SD config, name is group of the monitoring services described above.
+    POST /v1/labels                      # Add runtime labels that will persist over daemon restarts. Labels should be in the body of the request, one line per one label.
+    DELETE /v1/labels                    # Delete runtime labels. One label per line. Can't affect the labels from environment variables or labels added from the LabelPath.
+
+If there is an error the error message is returned as plain text.
 
 ## TODO
 
@@ -152,6 +158,7 @@ So far the REST API is super simple and it has only two endpoints:
 * [ ] Command hooks - script or list of scripts that are triggered when discovery status has changed
 * [ ] Support for multiple active backend drivers
 * [ ] SNS driver
+* [ ] API to allow add labels at runtime
 
 
 

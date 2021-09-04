@@ -18,6 +18,7 @@ import (
 
 var discoveryStorage server.Discoveries = server.Discoveries{}
 var driver common.Driver
+var localHost server.LocalHost
 
 var config Config
 
@@ -30,6 +31,14 @@ func init() {
 	// Setup discovery storage
 	discoveryStorage.LogChannel = make(chan string)
 	discoveryStorage.TTL = config.TTL
+
+	// localhost initization
+	localHost = server.LocalHost{
+		LabelsPath:            config.LabelsPath,
+		HostnameOverride:      config.HostName,
+		InitialLabels:         config.Labels,
+		RuntimeLabelsFilename: config.RuntimeLabelsFilename,
+	}
 
 	// Setup driver
 	driver = &nats_driver.Driver{
@@ -52,7 +61,7 @@ func cleanDiscoveryPool() {
 // sendGoodbyePacket is almost same as sendDiscoveryPacket but it's not running in loop
 // and it adds goodbye message so other nodes know this node is gonna die.
 func sendGoodbyePacket() {
-	discovery, err := server.GetIdentification(config.HostName, config.Labels, config.LabelsPath)
+	discovery, err := localHost.GetIdentification()
 	if err != nil {
 		log.Printf("sending discovery identification error: %v\n", err)
 	}
@@ -66,7 +75,7 @@ func sendGoodbyePacket() {
 // sendDisoveryPacket sends discovery packet regularly so the network know we exist
 func sendDiscoveryPacket() {
 	for {
-		discovery, err := server.GetIdentification(config.HostName, config.Labels, config.LabelsPath)
+		discovery, err := localHost.GetIdentification()
 		if err != nil {
 			log.Printf("sending discovery identification error: %v\n", err)
 		}
@@ -139,7 +148,10 @@ func main() {
 
 	// Routes
 	e.GET("/", listHandler)
-	e.GET("/v1/", listHandler)
+	e.GET("/v1/discovery", getIdentificationHandler)
+	e.GET("/v1/discoveries", listHandler)
+	e.POST("/v1/labels", addLabelsHandler)
+	e.DELETE("/v1/labels", deleteLabelsHandler)
 	e.GET("/v1/prometheus/:name", prometheusHandler)
 
 	// ------------------------------
