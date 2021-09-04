@@ -39,8 +39,8 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 
 		labels := map[string]string{}
 
-		for _, label := range discovery.FindLabels("prometheus:" + name) {
-			trimmed := strings.TrimPrefix(label, "prometheus:"+name+":")
+		for _, label := range discovery.FindLabels("prometheus:" + name + ":") {
+			trimmed := strings.TrimPrefix(label.String(), "prometheus:"+name+":")
 			parts := strings.SplitN(trimmed, ":", 2)
 			if len(parts) == 2 {
 				if parts[0] == "port" {
@@ -57,7 +57,7 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 		// This has to be checked here again because FindLabels adds : at the end of the label name.
 		if !add {
 			for _, label := range discovery.Labels {
-				if label == "prometheus:"+name {
+				if label.String() == "prometheus:"+name {
 					add = true
 					break
 				}

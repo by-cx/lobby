@@ -52,7 +52,7 @@ func cleanDiscoveryPool() {
 // sendGoodbyePacket is almost same as sendDiscoveryPacket but it's not running in loop
 // and it adds goodbye message so other nodes know this node is gonna die.
 func sendGoodbyePacket() {
-	discovery, err := getIdentification()
+	discovery, err := server.GetIdentification(config.HostName, config.Labels, config.LabelsPath)
 	if err != nil {
 		log.Printf("sending discovery identification error: %v\n", err)
 	}
@@ -66,7 +66,7 @@ func sendGoodbyePacket() {
 // sendDisoveryPacket sends discovery packet regularly so the network know we exist
 func sendDiscoveryPacket() {
 	for {
-		discovery, err := getIdentification()
+		discovery, err := server.GetIdentification(config.HostName, config.Labels, config.LabelsPath)
 		if err != nil {
 			log.Printf("sending discovery identification error: %v\n", err)
 		}

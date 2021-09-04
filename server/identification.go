@@ -1,89 +1,80 @@
-package main
+package server
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/rosti-cz/server_lobby/server"
 	"github.com/shirou/gopsutil/v3/host"
 )
 
 // getIdentification assembles the discovery packet that contains hotname and set of labels describing a single server, in this case the local server.
-func getIdentification() (server.Discovery, error) {
-	discovery := server.Discovery{}
+// Parameter initialLabels usually coming from configuration of the app.
+// If hostname is empty it will be discovered automatically.
+func GetIdentification(hostname string, initialLabels Labels, labelsPath string) (Discovery, error) {
+	discovery := Discovery{}
 
-	localLabels, err := loadLocalLabels(config.Labels)
+	localLabels, err := loadLocalLabels(initialLabels, labelsPath)
 	if err != nil {
 		return discovery, err
 	}
 
-	if len(config.HostName) == 0 {
+	if len(hostname) == 0 {
 		info, err := host.Info()
 		if err != nil {
 			return discovery, err
 		}
 		discovery.Hostname = info.Hostname
 	} else {
-		discovery.Hostname = config.HostName
+		discovery.Hostname = hostname
 	}
 
-	discovery.Labels = append(config.Labels, localLabels...)
+	discovery.Labels = append(initialLabels, localLabels...)
 
 	return discovery, nil
 }
 
 // loadLocalLabels scans local directory where labels are stored and adds them to the labels configured as environment variables.
 // Filename in LabelsPath is not importent and each file can contain multiple labels, one per each line.
-func loadLocalLabels(skipLabels []string) ([]string, error) {
-	labels := []string{}
+func loadLocalLabels(skipLabels Labels, labelsPath string) (Labels, error) {
+	labels := Labels{}
 	var found bool
 
-	if _, err := os.Stat(config.LabelsPath); !os.IsNotExist(err) {
-		files, err := ioutil.ReadDir(config.LabelsPath)
+	if _, err := os.Stat(labelsPath); !os.IsNotExist(err) {
+		files, err := ioutil.ReadDir(labelsPath)
 		if err != nil {
 			return labels, err
 		}
 
 		for _, filename := range files {
-			fullPath := path.Join(config.LabelsPath, filename.Name())
-			fp, err := os.OpenFile(fullPath, os.O_RDONLY, os.ModePerm)
+			fullPath := path.Join(labelsPath, filename.Name())
+
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
-				return labels, fmt.Errorf("open file error: %v", err)
+				return labels, fmt.Errorf("read file error: %v", err)
 
 			}
-			defer fp.Close()
+			fmt.Println(string(content))
 
-			rd := bufio.NewReader(fp)
-			for {
-				line, err := rd.ReadString('\n')
-				if err != nil {
-					if err == io.EOF {
-						break
-					}
-
-					return labels, fmt.Errorf("read file line error: %v", err)
-				}
+			for _, line := range strings.Split(string(content), "\n") {
 				line = strings.TrimSpace(line)
 				if len(line) > 0 {
 					found = false
 					for _, skipLabel := range skipLabels {
-						if skipLabel == line {
+						if skipLabel == Label(line) {
 							found = true
 							break
 						}
 					}
 					if !found {
-						labels = append(labels, line)
+						labels = append(labels, Label(line))
 					}
 				}
 			}
 		}
 	}
-
+	fmt.Println("LABELS", labels)
 	return labels, nil
 }

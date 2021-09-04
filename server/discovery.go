@@ -15,8 +15,8 @@ const TimeToLife = 60 // when server won't occur in the discovery channel longer
 
 // Discovery contains information about a single server and is used for server discovery
 type Discovery struct {
-	Hostname string   `json:"hostname"`
-	Labels   []string `json:"labels"`
+	Hostname string `json:"hostname"`
+	Labels   Labels `json:"labels"`
 
 	// For internal use to check if the server is still alive.
 	// Contains timestamp of the last check.
@@ -44,11 +44,12 @@ func (d *Discovery) Bytes() ([]byte, error) {
 	return data, err
 }
 
-// FindLabels returns list of labels with given prefix. For example "service:ns" has prefix "service"
-func (d *Discovery) FindLabels(prefix string) []string {
-	labels := []string{}
+// FindLabels returns list of labels with given prefix. For example "service:ns" has prefix "service" or "service:".
+// It doesn't have to be prefix, but for example "service:test" will match "service:test" and also "service:test2".
+func (d *Discovery) FindLabels(prefix string) Labels {
+	labels := Labels{}
 	for _, label := range d.Labels {
-		if strings.HasPrefix(label, prefix+":") {
+		if strings.HasPrefix(label.String(), prefix) {
 			labels = append(labels, label)
 		}
 	}
@@ -156,7 +157,7 @@ func (d *Discoveries) Filter(labelsFilter []string) []Discovery {
 			found = false
 			for _, label := range discovery.Labels {
 				for _, labelFilter := range labelsFilter {
-					if label == labelFilter {
+					if label.String() == labelFilter {
 						newSet = append(newSet, discovery)
 						found = true
 						break
