@@ -2,10 +2,12 @@
 
 In one of ours projects we needed service discovery that doesn't need complicated setup just to share
 a simple information about running services and checking if they are still alive. So we came up with
-this small service we call Lobby. It's like a lobby in games but in this case there are servers. Each
-server runs one or more instances of lobby daemon and it regularly sends how it's configured.
+this small service we called Lobby. It's like a lobby for users in games but in this case there are
+servers instead. Each server runs one or more instances of lobby daemon and it regularly sends info
+about its hostname and configured labels.
 
-We call the information about the server and services running on it *labels*. Every server shares
+Labels are similar what you could know from AWS. It's basically alternative to resources' tags feature
+with the only different that you can use this anywhere. Every server sends something called
 "discovery packet" which is basically a json that looks like this:
 
 ```json
@@ -20,15 +22,16 @@ We call the information about the server and services running on it *labels*. Ev
 }
 ```
 
-The packet contains information what's the server hostname and then list of labels describing
+The packet contains information what's the server's hostname and then list of labels describing
 what's running on it and what are the IP addresses. What's in the labels is completely up to you
 but in some use-cases (Node Exporter API endpoint) it expects "NAME:VALUE" format.
 
 The labels can be configured via environment variables but also as files located in
-*/etc/lobby/labels* (configurable path) so it can dynamically change.
+*/etc/lobby/labels* (configurable path) so it can dynamically change. Another way is to use
+*lobbyctl* which can add new labels at runtime.
 
 When everything is running just call your favorite http client against "http://localhost:1313/"
-on any of the running instances and lobby returns you list of all available servers and
+on any of the running instances and lobby returns a list of all available servers and
 their labels. You can hook it to Prometheus, deployment scripts, CI/CD automations or
 your internal system that sends emails and it needs to know where is the SMTP server for
 example.
@@ -39,15 +42,16 @@ messaging system which handles the communication part but also the high availabi
 NATS is easy to run and it offloads a huge part of the problem from lobby itself.
 
 The code is open to support multiple backends and it's not that hard to add a new one.
+Support for NATS is only less than 150 lines.
 
 ## Quickstart guide
 
-The quickest way how to run lobbyd on your server is this:
+The quickest way how to run lobby on your server is this:
 
 ```shell
-wget -O /usr/local/bin/lobbyd https://....
+wget -O /usr/local/bin/lobbyd https://github.com/by-cx/lobby/releases/download/v1.0/lobbyd-1.0-linux-amd64
 chmod +x /usr/local/bin/lobbyd
-wget -O /usr/local/bin/lobbyctl https://....
+wget -O /usr/local/bin/lobbyctl https://github.com/by-cx/lobby/releases/download/v1.0/lobbyctl-1.0-linux-amd64
 chmod +x /usr/local/bin/lobbyctl
 
 # Update NATS_URL and LABELS here
@@ -72,7 +76,7 @@ systemctl enable lobbyd
 ```
 
 If you run lobbyd in production, consider to create its own system user and group and add both into this
-service file. It doesn't need to access almost anything in your system.
+service file. It doesn't need to access everything in your system.
 
 To test if local instance is running call this:
 
