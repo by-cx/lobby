@@ -155,19 +155,24 @@ func (d *Discoveries) Filter(labelsFilter []string) []Discovery {
 	var found bool
 	if len(labelsFilter) > 0 {
 		for _, discovery := range d.activeServers {
+			newDiscovery := discovery
+			newDiscovery.Labels = Labels{}
+
 			found = false
 			for _, label := range discovery.Labels {
 				for _, labelFilter := range labelsFilter {
 					if label.String() == labelFilter {
-						newSet = append(newSet, discovery)
 						found = true
+						newDiscovery.Labels = append(newDiscovery.Labels, label)
 						break
 					}
 				}
-				if found {
-					break
-				}
 			}
+
+			if found {
+				newSet = append(newSet, newDiscovery)
+			}
+
 		}
 
 	}
@@ -182,18 +187,27 @@ func (d *Discoveries) FilterPrefix(prefixes []string) []Discovery {
 	var found bool
 	if len(prefixes) > 0 {
 		for _, discovery := range d.activeServers {
+			newDiscovery := discovery
+			newDiscovery.Labels = Labels{}
+
 			found = false
+
+			if found {
+				newSet = append(newSet, newDiscovery)
+			}
+
 			for _, label := range discovery.Labels {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(label.String(), prefix) {
-						newSet = append(newSet, discovery)
 						found = true
+						newDiscovery.Labels = append(newDiscovery.Labels, label)
 						break
 					}
 				}
-				if found {
-					break
-				}
+			}
+
+			if found {
+				newSet = append(newSet, newDiscovery)
 			}
 		}
 
