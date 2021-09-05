@@ -13,7 +13,7 @@ test:
 	go test -v server/*.go
 
 .PHONY: build
-build: test
+build: test clean
 	mkdir -p ./bin
 	# linux amd64
 	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/lobbyd-${VERSION}-linux-amd64 daemon/*.go
