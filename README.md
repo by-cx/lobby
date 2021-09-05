@@ -100,30 +100,6 @@ There are other config directives you can use to fine-tune lobbyd to exactly wha
 | REGISTER                | bool   | true              | no       | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
 
 
-## Command line tool
-
-To access your servers from command line or shell scripts you can use *lobbyctl*.
-
-```
-Usage of lobbyctl:
-  -host string
-    	Hostname or IP address of lobby daemon
-  -port uint
-    	Port of lobby daemon
-  -proto string
-    	Select HTTP or HTTPS protocol
-  -token string
-    	Token needed to communicate lobby daemon, if empty auth is disabled
-
-Commands:
-  discovery                      returns discovery packet of the server where the client is connected to
-  discoveries                    returns list of all registered discovery packets
-  labels add LABEL [LABEL] ...   adds new runtime labels
-  labels del LABEL [LABEL] ...   deletes runtime labels
-```
-
-It uses Go client library also located in this repository.
-
 ### Service discovery for Prometheus
 
 Lobbyd has an API endpoint that returns list of targets for [Prometheus's HTTP SD config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#http_sd_config). That
@@ -169,6 +145,31 @@ will use default port from the environment variable above and hostname of the se
 
 At least one prometheus label has to be set to export the monitoring service in the prometheus output.
 
+## Command line tool
+
+To access your servers from command line or shell scripts you can use *lobbyctl*.
+
+```
+Usage of lobbyctl:
+  -host string
+    	Hostname or IP address of lobby daemon
+  -port uint
+    	Port of lobby daemon
+  -proto string
+    	Select HTTP or HTTPS protocol
+  -token string
+    	Token needed to communicate lobby daemon, if empty auth is disabled
+
+Commands:
+  discovery                      returns discovery packet of the server where the client is connected to
+  discoveries                    returns list of all registered discovery packets
+  labels add LABEL [LABEL] ...   adds new runtime labels
+  labels del LABEL [LABEL] ...   deletes runtime labels
+```
+
+It uses Go client library also located in this repository.
+
+
 ## REST API
 
 So far the REST API is super simple and it has only two endpoints:
@@ -187,11 +188,11 @@ If there is an error the error message is returned as plain text.
 
 ## TODO
 
-* [ ] Tests
+* [X] Tests
 * [ ] Command hooks - script or list of scripts that are triggered when discovery status has changed
 * [ ] Support for multiple active backend drivers
 * [ ] SNS driver
-* [ ] API to allow add labels at runtime
+* [X] API to allow add labels at runtime
 
 
 
