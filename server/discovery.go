@@ -148,6 +148,7 @@ func (d *Discoveries) GetAll() []Discovery {
 	return d.activeServers
 }
 
+// Filter returns list of discoveries based on given labels
 func (d *Discoveries) Filter(labelsFilter []string) []Discovery {
 	newSet := []Discovery{}
 
@@ -158,6 +159,33 @@ func (d *Discoveries) Filter(labelsFilter []string) []Discovery {
 			for _, label := range discovery.Labels {
 				for _, labelFilter := range labelsFilter {
 					if label.String() == labelFilter {
+						newSet = append(newSet, discovery)
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+		}
+
+	}
+
+	return newSet
+}
+
+// Filter returns list of discoveries based on given label prefixes.
+func (d *Discoveries) FilterPrefix(prefixes []string) []Discovery {
+	newSet := []Discovery{}
+
+	var found bool
+	if len(prefixes) > 0 {
+		for _, discovery := range d.activeServers {
+			found = false
+			for _, label := range discovery.Labels {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(label.String(), prefix) {
 						newSet = append(newSet, discovery)
 						found = true
 						break

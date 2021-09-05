@@ -14,10 +14,12 @@ func Usage() {
 	flag.Usage()
 	fmt.Println("")
 	fmt.Println("Commands:")
-	fmt.Println("  discovery                      returns discovery packet of the server where the client is connected to")
-	fmt.Println("  discoveries                    returns list of all registered discovery packets")
-	fmt.Println("  labels add LABEL [LABEL] ...   adds new runtime labels")
-	fmt.Println("  labels del LABEL [LABEL] ...   deletes runtime labels")
+	fmt.Println("  discovery                        returns discovery packet of the server where the client is connected to")
+	fmt.Println("  discoveries                      returns list of all registered discovery packets")
+	fmt.Println("  discoveries labels [LABEL] ...   returns list of all registered discovery packets with given labels (OR)")
+	fmt.Println("  discoveries search [LABEL] ...   returns list of all registered discovery packets with given label prefixes (OR)")
+	fmt.Println("  labels add LABEL [LABEL] ...     adds new runtime labels")
+	fmt.Println("  labels del LABEL [LABEL] ...     deletes runtime labels")
 }
 
 func main() {
@@ -66,10 +68,41 @@ func main() {
 
 	switch flag.Args()[0] {
 	case "discoveries":
-		discoveries, err := client.GetDiscoveries()
-		if err != nil {
-			fmt.Println(err)
+		var discoveries []server.Discovery
+		var err error
+
+		if len(flag.Args()) > 2 {
+			if flag.Arg(1) == "labels" {
+				labels := []server.Label{}
+				for _, label := range flag.Args()[2:] {
+					labels = append(labels, server.Label(label))
+				}
+
+				discoveries, err = client.FindByLabels(labels)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			} else if flag.Arg(1) == "search" {
+				discoveries, err = client.FindByPrefixes(flag.Args()[2:])
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			} else {
+				fmt.Println("ERROR: unknown usage of discoveries arguments")
+				fmt.Println("")
+				Usage()
+				os.Exit(0)
+			}
+		} else {
+			discoveries, err = client.GetDiscoveries()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
+
 		printDiscoveries(discoveries)
 	case "discovery":
 		discovery, err := client.GetDiscovery()

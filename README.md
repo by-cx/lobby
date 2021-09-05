@@ -179,13 +179,13 @@ It uses Go client library also located in this repository.
 So far the REST API is super simple and it has only two endpoints:
 
 ```
-GET /                                # Same as /v1/discoveries
-GET /v1/discovery                    # Returns current local discovery packet
-GET /v1/discoveries                  # Returns list of all discovered servers and their labels.
-GET /v1/discoveries?labels=LABELS    # output will be filtered based on one or multiple labels separated by comma
-GET /v1/prometheus/:name             # Generates output for Prometheus's SD config, name is group of the monitoring services described above.
-POST /v1/labels                      # Add runtime labels that will persist over daemon restarts. Labels should be in the body of the request, one line per one label.
-DELETE /v1/labels                    # Delete runtime labels. One label per line. Can't affect the labels from environment variables or labels added from the LabelPath.
+GET /                                                  # Same as /v1/discoveries
+GET /v1/discovery                                      # Returns current local discovery packet
+GET /v1/discoveries                                    # Returns list of all discovered servers and their labels.
+GET /v1/discoveries?labels=LABELS&prefixes=PREFIXES    # output will be filtered based on one or multiple labels separated by comma or it can search for given prefixes, only one of those will be used
+GET /v1/prometheus/:name                               # Generates output for Prometheus's SD config, name is group of the monitoring services described above.
+POST /v1/labels                                        # Add runtime labels that will persist over daemon restarts. Labels should be in the body of the request, one line per one label.
+DELETE /v1/labels                                      # Delete runtime labels. One label per line. Can't affect the labels from environment variables or labels added from the LabelPath.
 ```
 
 If there is an error the error message is returned as plain text.

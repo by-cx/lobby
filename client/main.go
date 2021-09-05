@@ -115,13 +115,38 @@ func (l *LobbyClient) GetDiscoveries() ([]server.Discovery, error) {
 }
 
 // Find discoveries by their labels
-func (l *LobbyClient) FindByLabels(labels server.Labels) (server.Discoveries, error) {
+func (l *LobbyClient) FindByLabels(labels server.Labels) ([]server.Discovery, error) {
 	l.init()
 
 	path := fmt.Sprintf("/v1/discoveries?labels=%s", strings.Join(labels.StringSlice(), ","))
 	method := "GET"
 
-	var discoveries server.Discoveries
+	var discoveries []server.Discovery
+
+	status, body, err := l.call(method, path, "")
+	if err != nil {
+		return discoveries, err
+	}
+	if status != 200 {
+		return discoveries, fmt.Errorf("non-200 response: %s", body)
+	}
+
+	err = json.Unmarshal([]byte(body), &discoveries)
+	if err != nil {
+		return discoveries, fmt.Errorf("response parsing error: %v", err)
+	}
+
+	return discoveries, nil
+}
+
+// Find discoveries by label prefixes
+func (l *LobbyClient) FindByPrefixes(prefixes []string) ([]server.Discovery, error) {
+	l.init()
+
+	path := fmt.Sprintf("/v1/discoveries?prefixes=%s", strings.Join(prefixes, ","))
+	method := "GET"
+
+	var discoveries []server.Discovery
 
 	status, body, err := l.call(method, path, "")
 	if err != nil {

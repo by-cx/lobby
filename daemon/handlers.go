@@ -12,12 +12,15 @@ import (
 
 func listHandler(c echo.Context) error {
 	labels := c.QueryParam("labels")
+	prefixes := c.QueryParam("prefixes")
 
 	var discoveries []server.Discovery
 
 	if len(labels) > 0 {
 		labelsFilterSlice := strings.Split(labels, ",")
 		discoveries = discoveryStorage.Filter(labelsFilterSlice)
+	} else if len(prefixes) > 0 {
+		discoveries = discoveryStorage.FilterPrefix(strings.Split(prefixes, ","))
 	} else {
 		discoveries = discoveryStorage.GetAll()
 	}
