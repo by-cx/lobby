@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/fatih/color v1.12.0
 	github.com/go-resty/resty/v2 v2.6.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
