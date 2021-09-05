@@ -47,6 +47,8 @@ The quickest way how to run lobbyd on your server is this:
 ```shell
 wget -O /usr/local/bin/lobbyd https://....
 chmod +x /usr/local/bin/lobbyd
+wget -O /usr/local/bin/lobbyctl https://....
+chmod +x /usr/local/bin/lobbyctl
 
 # Update NATS_URL and LABELS here
 cat << EOF > /etc/systemd/system/lobbyd.service
@@ -72,6 +74,10 @@ systemctl enable lobbyd
 If you run lobbyd in production, consider to create its own system user and group and add both into this
 service file. It doesn't need to access almost anything in your system.
 
+To test if local instance is running call this:
+
+    lobbyctl discovery
+
 ## Daemon
 
 There are other config directives you can use to fine-tune lobbyd to exactly what you need.
@@ -92,6 +98,31 @@ There are other config directives you can use to fine-tune lobbyd to exactly wha
 | TTL                     | int    | 30                | no       | After how many secs is discovery record considered as invalid                                                                                           |
 | NODE_EXPORTER_PORT      | int    | 9100              | no       | Default port where node_exporter listens on all registered servers, this is used when the special prometheus labels doesn't contain port                |
 | REGISTER                | bool   | true              | no       | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
+
+
+## Command line tool
+
+To access your servers from command line or shell scripts you can use *lobbyctl*.
+
+```
+Usage of lobbyctl:
+  -host string
+    	Hostname or IP address of lobby daemon
+  -port uint
+    	Port of lobby daemon
+  -proto string
+    	Select HTTP or HTTPS protocol
+  -token string
+    	Token needed to communicate lobby daemon, if empty auth is disabled
+
+Commands:
+  discovery                      returns discovery packet of the server where the client is connected to
+  discoveries                    returns list of all registered discovery packets
+  labels add LABEL [LABEL] ...   adds new runtime labels
+  labels del LABEL [LABEL] ...   deletes runtime labels
+```
+
+It uses Go client library also located in this repository.
 
 ### Service discovery for Prometheus
 
