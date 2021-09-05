@@ -30,6 +30,7 @@ func main() {
 	host := flag.String("host", "", "Hostname or IP address of lobby daemon")
 	port := flag.Uint("port", 0, "Port of lobby daemon")
 	token := flag.String("token", "", "Token needed to communicate lobby daemon, if empty auth is disabled")
+	jsonOutput := flag.Bool("json", false, "set output to JSON, error will be still in plain text")
 
 	flag.Parse()
 
@@ -103,13 +104,22 @@ func main() {
 			}
 		}
 
-		printDiscoveries(discoveries)
+		if *jsonOutput {
+			printJSON(discoveries)
+		} else {
+			printDiscoveries(discoveries)
+		}
 	case "discovery":
 		discovery, err := client.GetDiscovery()
 		if err != nil {
 			fmt.Println(err)
 		}
-		printDiscovery(discovery)
+
+		if *jsonOutput {
+			printJSON(discovery)
+		} else {
+			printDiscovery(discovery)
+		}
 	case "labels":
 		if len(flag.Args()) < 3 {
 			fmt.Println("ERROR: not enough arguments for labels command")

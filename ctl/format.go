@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/rosti-cz/server_lobby/server"
@@ -40,4 +42,14 @@ func printDiscoveries(discoveries []server.Discovery) {
 		}
 		fmt.Println()
 	}
+}
+
+func printJSON(data interface{}) {
+	body, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("error occurred while formating the output into JSON:", err.Error())
+		os.Exit(3)
+	}
+
+	fmt.Println(string(body))
 }
