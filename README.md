@@ -186,6 +186,11 @@ DELETE /v1/labels                    # Delete runtime labels. One label per line
 
 If there is an error the error message is returned as plain text.
 
+## API clients
+
+* Golang client is part of this repository.
+* There is also [Python client](https://github.com/by-cx/lobby-python) available.
+
 ## TODO
 
 * [X] Tests
