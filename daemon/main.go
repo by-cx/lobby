@@ -167,7 +167,7 @@ func main() {
 		if config.Register {
 			log.Printf("%s signal received, sending goodbye packet\n", sig.String())
 			sendGoodbyePacket()
-			time.Sleep(5 * time.Second) // we wait for a few seconds to let background jobs to finish their job
+			time.Sleep(1 * time.Second) // we wait for a few seconds to let background jobs to finish their job
 		} else {
 			log.Printf("%s signal received", sig.String())
 		}
@@ -175,5 +175,6 @@ func main() {
 	}(e, config)
 
 	// Start server
-	e.Logger.Error(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))
+	// In most cases this will end expectedly so it doesn't make sense to use the echo's approach to treat this message as an error.
+	e.Logger.Info(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))
 }
