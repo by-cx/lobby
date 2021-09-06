@@ -1,5 +1,7 @@
 # Lobby - simple server/service discovery service
 
+TLDR: This a labeling tool for your servers. Like AWS resource tags but available everywhere.
+
 In one of ours projects we needed service discovery that doesn't need complicated setup just to share
 a simple information about running services and checking if they are still alive. So we came up with
 this small service we called Lobby. It's like a lobby for users in games but in this case there are
