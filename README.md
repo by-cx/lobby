@@ -39,9 +39,10 @@ your internal system that sends emails and it needs to know where is the SMTP se
 example.
 
 Lobby doesn't care if you have a one or thousand instances of it running. Each instance
-is connected to a common point which is a [NATS server](https://nats.io/) in this case. NATS is super fast and reliable
+is connected to a common point which is a [NATS server](https://nats.io/) or Redis. NATS is super fast and reliable
 messaging system which handles the communication part but also the high availability part.
-NATS is easy to run and it offloads a huge part of the problem from lobby itself.
+NATS is easy to run and it offloads a huge part of the problem from lobby itself. But Redis
+is not a bad choice either in some cases.
 
 The code is open to support multiple backends and it's not that hard to add a new one.
 Support for NATS is only less than 150 lines.
