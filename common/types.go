@@ -1,6 +1,6 @@
 package common
 
-import "github.com/rosti-cz/server_lobby/server"
+import "github.com/by-cx/lobby/server"
 
 // Listener is a function that returns received discovery
 type Listener func(server.Discovery)

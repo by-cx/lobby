@@ -1,31 +1,36 @@
-package nats_driver
+package redis_driver
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/by-cx/lobby/common"
 	"github.com/by-cx/lobby/server"
-	"github.com/nats-io/nats.go"
+	"github.com/go-redis/redis"
+
+	"fmt"
 )
 
-// NATS drivers is used to send discovery packet to other nodes into the group via NATS messenging protocol.
+// Redis drivers is used to send discovery packet to other nodes into the group via Redis's pubsub protocol.
 type Driver struct {
-	NATSUrl              string
-	NATSDiscoveryChannel string
+	Host     string
+	Port     uint
+	Password string
+	Channel  string
+	DB       uint
 
 	LogChannel chan string
 
-	nc                  *nats.Conn
 	subscribeListener   common.Listener
 	unsubscribeListener common.Listener
+
+	redis *redis.Client
 }
 
 // handler is called asynchronously so and because it cannot log directly to stderr there
 // is channel called LogChannel that can be used to log error messages from this
-func (d *Driver) handler(m *nats.Msg) {
+func (d *Driver) handler(payload string) {
 	message := discoveryEnvelope{}
-	err := json.Unmarshal(m.Data, &message)
+	err := json.Unmarshal([]byte(payload), &message)
 	if err != nil && d.LogChannel != nil {
 		d.LogChannel <- fmt.Errorf("decoding message error: %v", err).Error()
 	}
@@ -44,31 +49,49 @@ func (d *Driver) handler(m *nats.Msg) {
 			d.LogChannel <- "incompatible message"
 		}
 	}
-
 }
 
+// Init connect to Redis, subscribes to the channel and waits for the messages.
+// It runs goroutine in background that listens for new messages.
 func (d *Driver) Init() error {
 	if d.LogChannel == nil {
 		return fmt.Errorf("please initiate LogChannel variable")
 	}
 
-	nc, err := nats.Connect(d.NATSUrl)
-	if err != nil {
-		return err
+	if len(d.Host) == 0 {
+		return fmt.Errorf("parameter Host cannot be empty")
 	}
-	d.nc = nc
 
-	_, err = nc.Subscribe(d.NATSDiscoveryChannel, d.handler)
-	if err != nil {
-		return err
+	if len(d.Channel) == 0 {
+		return fmt.Errorf("pattern cannot be empty")
 	}
+
+	if d.Port <= 0 || d.Port > 65536 {
+		return fmt.Errorf("port has to be in range of 0-65536")
+	}
+
+	d.redis = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", d.Host, d.Port),
+		Password: d.Password,
+		DB:       int(d.DB),
+	})
+
+	pubsub := d.redis.Subscribe(d.Channel)
+
+	go func(pubsub *redis.PubSub, d *Driver) {
+		channel := pubsub.Channel()
+
+		for message := range channel {
+			d.handler(message.Payload)
+		}
+	}(pubsub, d)
 
 	return nil
 }
 
 // Close is called when all is done.
 func (d *Driver) Close() error {
-	return d.nc.Drain()
+	return d.redis.Close()
 }
 
 // RegisterSubscribeFunction sets the function that will process the incoming messages
@@ -92,7 +115,8 @@ func (d *Driver) SendDiscoveryPacket(discovery server.Discovery) error {
 	if err != nil {
 		return fmt.Errorf("sending discovery formating message error: %v", err)
 	}
-	err = d.nc.Publish(d.NATSDiscoveryChannel, data)
+
+	err = d.redis.Publish(d.Channel, data).Err()
 	if err != nil {
 		return fmt.Errorf("sending discovery error: %v", err)
 	}
@@ -110,7 +134,7 @@ func (d *Driver) SendGoodbyePacket(discovery server.Discovery) error {
 	if err != nil {
 		return fmt.Errorf("sending discovery formating message error: %v", err)
 	}
-	err = d.nc.Publish(d.NATSDiscoveryChannel, data)
+	err = d.redis.Publish(d.Channel, data).Err()
 	if err != nil {
 		return fmt.Errorf("sending discovery error: %v", err)
 	}

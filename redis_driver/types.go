@@ -1,4 +1,4 @@
-package nats_driver
+package redis_driver
 
 import (
 	"encoding/json"

@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rosti-cz/server_lobby/client"
-	"github.com/rosti-cz/server_lobby/server"
+	"github.com/by-cx/lobby/client"
+	"github.com/by-cx/lobby/server"
 )
 
 func Usage() {

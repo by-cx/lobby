@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/by-cx/lobby/server"
 	"github.com/fatih/color"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 func printDiscovery(discovery server.Discovery) {

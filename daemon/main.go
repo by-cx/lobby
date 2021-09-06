@@ -9,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/by-cx/lobby/common"
+	"github.com/by-cx/lobby/nats_driver"
+	"github.com/by-cx/lobby/redis_driver"
+	"github.com/by-cx/lobby/server"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/rosti-cz/server_lobby/common"
-	"github.com/rosti-cz/server_lobby/nats_driver"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 var discoveryStorage server.Discoveries = server.Discoveries{}
@@ -41,12 +42,27 @@ func init() {
 	}
 
 	// Setup driver
-	driver = &nats_driver.Driver{
-		NATSUrl:              config.NATSURL,
-		NATSDiscoveryChannel: config.NATSDiscoveryChannel,
+	if config.Driver == "NATS" {
+		driver = &nats_driver.Driver{
+			NATSUrl:              config.NATSURL,
+			NATSDiscoveryChannel: config.NATSDiscoveryChannel,
 
-		LogChannel: discoveryStorage.LogChannel,
+			LogChannel: discoveryStorage.LogChannel,
+		}
+	} else if config.Driver == "Redis" {
+		driver = &redis_driver.Driver{
+			Host:     config.RedisHost,
+			Port:     uint(config.RedisPort),
+			Password: config.RedisPassword,
+			Channel:  config.RedisChannel,
+			DB:       uint(config.RedisDB),
+
+			LogChannel: discoveryStorage.LogChannel,
+		}
+	} else {
+		log.Fatalf("unsupported driver %s", config.Driver)
 	}
+
 }
 
 // cleanDiscoveryPool clears the local server map and keeps only the alive servers
@@ -147,12 +163,14 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Routes
-	e.GET("/", listHandler)
-	e.GET("/v1/discovery", getIdentificationHandler)
-	e.GET("/v1/discoveries", listHandler)
-	e.POST("/v1/labels", addLabelsHandler)
-	e.DELETE("/v1/labels", deleteLabelsHandler)
-	e.GET("/v1/prometheus/:name", prometheusHandler)
+	if config.DisableAPI {
+		e.GET("/", listHandler)
+		e.GET("/v1/discovery", getIdentificationHandler)
+		e.GET("/v1/discoveries", listHandler)
+		e.POST("/v1/labels", addLabelsHandler)
+		e.DELETE("/v1/labels", deleteLabelsHandler)
+		e.GET("/v1/prometheus/:name", prometheusHandler)
+	}
 
 	// ------------------------------
 	// Termination signals processing

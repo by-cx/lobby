@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/by-cx/lobby/server"
 	"github.com/labstack/echo"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 func listHandler(c echo.Context) error {

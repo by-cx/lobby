@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/by-cx/lobby/server"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 // Config keeps info about configuration of this daemon
@@ -12,8 +12,15 @@ type Config struct {
 	Token                 string        `envconfig:"TOKEN" required:"false"`                                            // Authentication token, if empty auth is disabled
 	Host                  string        `envconfig:"HOST" required:"false" default:"127.0.0.1"`                         // IP address used for the REST server to listen
 	Port                  uint16        `envconfig:"PORT" required:"false" default:"1313"`                              // Port related to the address above
-	NATSURL               string        `envconfig:"NATS_URL" required:"true"`                                          // NATS URL used to connect to the NATS server
+	DisableAPI            bool          `envconfig:"DISABLE_API" required:"false" default:"false"`                      // If true API interface won't start
+	Driver                string        `envconfig:"DRIVER" required:"false" default:"NATS"`                            // Select driver to use to communicate with the group of nodes. The possible values are NATS and Redis
+	NATSURL               string        `envconfig:"NATS_URL" required:"false"`                                         // NATS URL used to connect to the NATS server
 	NATSDiscoveryChannel  string        `envconfig:"NATS_DISCOVERY_CHANNEL" required:"false" default:"lobby.discovery"` // Channel where the kepp alive packets are sent
+	RedisHost             string        `envconfig:"REDIS_HOST" required:"false" default:"127.0.0.1"`                   // Redis host
+	RedisPort             uint16        `envconfig:"REDIS_PORT" required:"false" default:"6379"`                        // Redis port
+	RedisDB               uint          `envconfig:"REDIS_DB" required:"false" default:"0"`                             // Redis DB
+	RedisChannel          string        `envconfig:"REDIS_CHANNEL" required:"false" default:"lobby:discovery"`          // Redis channel
+	RedisPassword         string        `envconfig:"REDIS_PASSWORD" required:"false" default:""`                        // Redis password
 	Labels                server.Labels `envconfig:"LABELS" required:"false" default:""`                                // List of labels
 	LabelsPath            string        `envconfig:"LABELS_PATH" required:"false" default:"/etc/lobby/labels"`          // Path where filesystem based labels are located
 	RuntimeLabelsFilename string        `envconfig:"RUNTIME_LABELS_FILENAME" required:"false" default:"_runtime"`       // Filename for file created in LabelsPath where runtime labels will be added
@@ -32,6 +39,14 @@ func GetConfig() *Config {
 	err := envconfig.Process("", &config)
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+
+	if config.Driver != "Redis" && config.Driver != "NATS" {
+		log.Fatal("ERROR: the only supported drivers are Redis and NATS (default)")
+	}
+
+	if config.Driver == "NATS" && len(config.NATSURL) == 0 {
+		log.Fatal("ERROR: NATS_URL cannot be empty when driver is set to NATS")
 	}
 
 	return &config

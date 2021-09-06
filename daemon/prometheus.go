@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rosti-cz/server_lobby/server"
+	"github.com/by-cx/lobby/server"
 )
 
 // [

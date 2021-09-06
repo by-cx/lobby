@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/by-cx/lobby/server"
 	"github.com/go-resty/resty/v2"
-	"github.com/rosti-cz/server_lobby/server"
 )
 
 // Encapsulation of Lobby's client code

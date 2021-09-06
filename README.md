@@ -9,7 +9,7 @@ servers instead. Each server runs one or more instances of lobby daemon and it r
 about its hostname and configured labels.
 
 Labels are similar what you could know from AWS. It's basically alternative to resources' tags feature
-with the only different that you can use this anywhere. Every server sends something called
+with the only different that you can use this anywhere including AWS. Every server sends something called
 "discovery packet" which is basically a json that looks like this:
 
 ```json
@@ -19,14 +19,14 @@ with the only different that you can use this anywhere. Every server sends somet
         "service:smtp",
         "public_ip4:1.2.3.4",
         "public_ip6:2a03::1"
-    ],
-    "last_check": 1630612478
+    ]
 }
 ```
 
 The packet contains information what's the server's hostname and then list of labels describing
-what's running on it and what are the IP addresses. What's in the labels is completely up to you
-but in some use-cases (Node Exporter API endpoint) it expects "NAME:VALUE" format.
+what's running on it, what are the IP addresses, services, directories to backup or server's location for example.
+What's in the labels is completely up to you but in some use-cases (Node Exporter API endpoint) it
+expects "NAME:VALUE" format.
 
 The labels can be configured via environment variables but also as files located in
 */etc/lobby/labels* (configurable path) so it can dynamically change. Another way is to use
@@ -88,22 +88,29 @@ To test if local instance is running call this:
 
 There are other config directives you can use to fine-tune lobbyd to exactly what you need.
 
-| Environment variable    | Type   | Default           | Required | Note                                                                                                                                                    |
-| ----------------------- | ------ | ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TOKEN                   | string |                   | no       | Authentication token for API, if empty auth is disabled                                                                                                 |
-| HOST                    | string | 127.0.0.1         | no       | IP address used for the REST server to listen                                                                                                           |
-| PORT                    | int    | 1313              | no       | Port related to the address above                                                                                                                       |
-| NATS_URL                | string |                   | yes      | NATS URL used to connect to the NATS server                                                                                                             |
-| NATS_DISCOVERY_CHANNEL  | string | lobby.discovery   | no       | Channel where the keep-alive packets are sent                                                                                                           |
-| LABELS                  | string |                   | no       | List of labels, labels should be separated by comma                                                                                                     |
-| LABELS_PATH             | string | /etc/lobby/labels | no       | Path where filesystem based labels are located, one label per line, filename is not important for lobby                                                 |
-| RUNTIME_LABELS_FILENAME | string | _runtime          | no       | Filename for file created in LabelsPath where runtime labels will be added                                                                              |
-| HOSTNAME                | string |                   | no       | Override local machine's hostname                                                                                                                       |
-| CLEAN_EVERY             | int    | 15                | no       | How often to clean the list of discovered servers to get rid of the not alive ones [secs]                                                               |
-| KEEP_ALIVE              | int    | 5                 | no       | how often to send the keep-alive discovery message with all available information [secs]                                                                |
-| TTL                     | int    | 30                | no       | After how many secs is discovery record considered as invalid                                                                                           |
-| NODE_EXPORTER_PORT      | int    | 9100              | no       | Default port where node_exporter listens on all registered servers, this is used when the special prometheus labels doesn't contain port                |
-| REGISTER                | bool   | true              | no       | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
+| Environment variable    | Type   | Default           | Required          | Note                                                                                                                                                    |
+| ----------------------- | ------ | ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TOKEN                   | string |                   | no                | Authentication token for API, if empty auth is disabled                                                                                                 |
+| HOST                    | string | 127.0.0.1         | no                | IP address used for the REST server to listen                                                                                                           |
+| PORT                    | int    | 1313              | no                | Port related to the address above                                                                                                                       |
+| DISABLE_API             | bool   | false             | no                | If true API interface won't start                                                                                                                       |
+| DRIVER                  | string | NATS              | yes               | Selects which driver is used to exchange the discovery packets.                                                                                         |
+| NATS_URL                | string |                   | yes (NATS driver) | NATS URL used to connect to the NATS server                                                                                                             |
+| NATS_DISCOVERY_CHANNEL  | string | lobby.discovery   | no                | Channel where the keep-alive packets are sent                                                                                                           |
+| REDIS_HOST              | string | 127.0.0.1"        | no                | Redis host                                                                                                                                              |
+| REDIS_PORT              | uint16 | 6379              | no                | Redis port                                                                                                                                              |
+| REDIS_DB                | string | 0                 | no                | Redis DB                                                                                                                                                |
+| REDIS_CHANNEL           | string | lobby:discovery   | no                | Redis channel                                                                                                                                           |
+| REDIS_PASSWORD          | string |                   | no                | Redis password                                                                                                                                          |
+| LABELS                  | string |                   | no                | List of labels, labels should be separated by comma                                                                                                     |
+| LABELS_PATH             | string | /etc/lobby/labels | no                | Path where filesystem based labels are located, one label per line, filename is not important for lobby                                                 |
+| RUNTIME_LABELS_FILENAME | string | _runtime          | no                | Filename for file created in LabelsPath where runtime labels will be added                                                                              |
+| HOSTNAME                | string |                   | no                | Override local machine's hostname                                                                                                                       |
+| CLEAN_EVERY             | int    | 15                | no                | How often to clean the list of discovered servers to get rid of the not alive ones [secs]                                                               |
+| KEEP_ALIVE              | int    | 5                 | no                | how often to send the keep-alive discovery message with all available information [secs]                                                                |
+| TTL                     | int    | 30                | no                | After how many secs is discovery record considered as invalid                                                                                           |
+| NODE_EXPORTER_PORT      | int    | 9100              | no                | Default port where node_exporter listens on all registered servers, this is used when the special prometheus labels doesn't contain port                |
+| REGISTER                | bool   | true              | no                | If true (default) then local instance is registered with other instance (discovery packet is sent regularly), if false the daemon runs only as a client |
 
 
 ### Service discovery for Prometheus
@@ -197,12 +204,25 @@ If there is an error the error message is returned as plain text.
 * Golang client is part of this repository.
 * There is also [Python client](https://github.com/by-cx/lobby-python) available.
 
+## Notes
+
+I wanted to use SQS or SNS as backend but when I checked the services I found out
+it wouldn't work. SNS would require open HTTP server whicn is hard to do in our
+infrastructure and I couldn't find a way how SQS could deliver every message
+to all instances of lobbyd.
+
+Instead I decided to implement Redis because it's much easier to use for
+development and testing. But there is no reason why it couldn't work in production
+too.
+
+
 ## TODO
 
 * [X] Tests
 * [ ] Command hooks - script or list of scripts that are triggered when discovery status has changed
 * [ ] Support for multiple active backend drivers
-* [ ] SNS driver
+* [ ] Redis driver
+* [X] Remove the 5 secs waiting when daemon is stopped
 * [X] API to allow add labels at runtime
 
 
