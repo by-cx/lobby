@@ -163,7 +163,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Routes
-	if config.DisableAPI {
+	if !config.DisableAPI {
 		e.GET("/", listHandler)
 		e.GET("/v1/discovery", getIdentificationHandler)
 		e.GET("/v1/discoveries", listHandler)

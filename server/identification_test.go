@@ -32,7 +32,7 @@ func TestGetIdentification(t *testing.T) {
 	discovery, err = localHost.GetIdentification()
 	assert.Nil(t, err)
 
-	assert.Equal(t, Label("public_ip:1.2.3.4"), discovery.Labels[3])
+	assert.Equal(t, Label("test:1"), discovery.Labels[3])
 
 	os.RemoveAll(tmpPath)
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -54,6 +55,18 @@ func (d *Discovery) FindLabels(prefix string) Labels {
 		}
 	}
 	return labels
+}
+
+func (d *Discovery) SortLabels() {
+	labelStrings := d.Labels.StringSlice()
+	sort.Strings(labelStrings)
+
+	labels := Labels{}
+	for _, label := range labelStrings {
+		labels = append(labels, Label(label))
+	}
+
+	d.Labels = labels
 }
 
 // -----------------

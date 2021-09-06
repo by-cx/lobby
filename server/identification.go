@@ -138,6 +138,7 @@ func (l *LocalHost) GetIdentification() (Discovery, error) {
 	}
 
 	discovery.Labels = append(l.InitialLabels, localLabels...)
+	discovery.SortLabels()
 
 	return discovery, nil
 }
