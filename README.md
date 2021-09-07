@@ -52,9 +52,9 @@ Support for NATS is only less than 150 lines.
 The quickest way how to run lobby on your server is this:
 
 ```shell
-wget -O /usr/local/bin/lobbyd https://github.com/by-cx/lobby/releases/download/v1.0/lobbyd-1.0-linux-amd64
+wget -O /usr/local/bin/lobbyd https://github.com/by-cx/lobby/releases/download/v1.1/lobbyd-1.1-linux-amd64
 chmod +x /usr/local/bin/lobbyd
-wget -O /usr/local/bin/lobbyctl https://github.com/by-cx/lobby/releases/download/v1.0/lobbyctl-1.0-linux-amd64
+wget -O /usr/local/bin/lobbyctl https://github.com/by-cx/lobby/releases/download/v1.1/lobbyctl-1.1-linux-amd64
 chmod +x /usr/local/bin/lobbyctl
 
 # Update NATS_URL and LABELS here
