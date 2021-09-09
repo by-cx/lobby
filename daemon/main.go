@@ -24,6 +24,7 @@ var localHost server.LocalHost
 var config Config
 
 var shuttingDown bool
+var sendDiscoveryPacketTrigger chan bool = make(chan bool)
 
 func init() {
 	// Load config from environment variables
@@ -88,19 +89,30 @@ func sendGoodbyePacket() {
 	}
 }
 
-// sendDisoveryPacket sends discovery packet regularly so the network know we exist
+// sendDiscoveryPacket sends a single discovery packet out
 func sendDiscoveryPacket() {
-	for {
-		discovery, err := localHost.GetIdentification()
-		if err != nil {
-			log.Printf("sending discovery identification error: %v\n", err)
-		}
+	sendDiscoveryPacketTrigger <- true
+}
 
-		err = driver.SendDiscoveryPacket(discovery)
-		if err != nil {
-			log.Println(err)
+// sendDisoveryPacket sends discovery packet to the driver which passes it to the
+// other nodes. By this it propagates any change that happens in the local discovery struct.
+// Every tune trigger is triggered it sends one message.
+func sendDiscoveryPacketTask(trigger chan bool) {
+	for {
+		// We are waiting for the trigger
+		<-trigger
+
+		if !shuttingDown {
+			discovery, err := localHost.GetIdentification()
+			if err != nil {
+				log.Println("sending discovery identification error: %v", err)
+			}
+
+			err = driver.SendDiscoveryPacket(discovery)
+			if err != nil {
+				log.Println(err.Error())
+			}
 		}
-		time.Sleep(time.Duration(config.KeepAlive) * time.Second)
 
 		if shuttingDown {
 			break
@@ -145,7 +157,21 @@ func main() {
 
 	// If config.Register is false this instance won't be registered with other nodes
 	if config.Register {
-		go sendDiscoveryPacket()
+		// This is background process that sends the message
+		go sendDiscoveryPacketTask(sendDiscoveryPacketTrigger)
+
+		// This triggers the process
+		go func() {
+			for {
+				sendDiscoveryPacket()
+
+				time.Sleep(time.Duration(config.KeepAlive) * time.Second)
+
+				if shuttingDown {
+					break
+				}
+			}
+		}()
 	} else {
 		log.Println("standalone mode, I won't register myself")
 	}

@@ -63,6 +63,9 @@ func addLabelsHandler(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
+	// Update the other nodes with this new change
+	sendDiscoveryPacket()
+
 	return c.String(http.StatusOK, "OK")
 }
 
@@ -83,6 +86,9 @@ func deleteLabelsHandler(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
+
+	// Update the other nodes with this new change
+	sendDiscoveryPacket()
 
 	return c.String(http.StatusOK, "OK")
 }
