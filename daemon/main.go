@@ -105,16 +105,14 @@ func sendDiscoveryPacketTask(trigger chan bool) {
 		if !shuttingDown {
 			discovery, err := localHost.GetIdentification()
 			if err != nil {
-				log.Println("sending discovery identification error: %v", err)
+				log.Printf("sending discovery identification error: %v\n", err)
 			}
 
 			err = driver.SendDiscoveryPacket(discovery)
 			if err != nil {
 				log.Println(err.Error())
 			}
-		}
-
-		if shuttingDown {
+		} else {
 			break
 		}
 	}
