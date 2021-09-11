@@ -137,12 +137,39 @@ func main() {
 	// Server discovering stuff
 	// ------------------------
 
-	// Connect to the NATS service
+	// Setup callback function to register and unregister discovery packets from other servers
 	driver.RegisterSubscribeFunction(func(d server.Discovery) {
+		// Check if the local version and the new version are somehow changed
+		localVersion := discoveryStorage.Get(d.Hostname)
+		exists := discoveryStorage.Exist(d.Hostname)
+		changed := server.Compare(localVersion, d)
+
 		discoveryStorage.Add(d)
+
+		if changed {
+
+			// Print this only if the server is already registered
+			if exists {
+				log.Printf("%s has been updated", d.Hostname)
+			}
+
+			go func() {
+				err = discoveryChange(d)
+				if err != nil {
+					log.Printf("discovery changed error: %v", err)
+				}
+			}()
+		}
+
 	})
 	driver.RegisterUnsubscribeFunction(func(d server.Discovery) {
 		discoveryStorage.Delete(d.Hostname)
+		go func() {
+			err = discoveryChange(d)
+			if err != nil {
+				log.Printf("discovery changed error: %v", err)
+			}
+		}()
 	})
 
 	err = driver.Init()
