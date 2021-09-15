@@ -20,6 +20,7 @@ import (
 var discoveryStorage server.Discoveries = server.Discoveries{}
 var driver common.Driver
 var localHost server.LocalHost
+var lastLocalHostname string
 
 var config Config
 
@@ -103,6 +104,7 @@ func sendDiscoveryPacketTask(trigger chan bool) {
 		<-trigger
 
 		if !shuttingDown {
+			// Get info about local machine and send to the exchange point
 			discovery, err := localHost.GetIdentification()
 			if err != nil {
 				log.Printf("sending discovery identification error: %v\n", err)
@@ -112,6 +114,19 @@ func sendDiscoveryPacketTask(trigger chan bool) {
 			if err != nil {
 				log.Println(err.Error())
 			}
+
+			// If local hostname changes, we will deregister it
+			if discovery.Hostname != lastLocalHostname && lastLocalHostname != "" {
+				log.Println("Hostname change detected, deregistering the old one")
+				err = driver.SendGoodbyePacket(server.Discovery{
+					Hostname: lastLocalHostname,
+				})
+				if err != nil {
+					log.Println(err)
+				}
+			}
+
+			lastLocalHostname = discovery.Hostname
 		} else {
 			break
 		}
@@ -139,7 +154,7 @@ func main() {
 
 	// Setup callback function to register and unregister discovery packets from other servers
 	driver.RegisterSubscribeFunction(func(d server.Discovery) {
-		// Check if the local version and the new version are somehow changed
+		// Check if the local version and the new version are somehowe changed
 		localVersion := discoveryStorage.Get(d.Hostname)
 		exists := discoveryStorage.Exist(d.Hostname)
 		changed := server.Compare(localVersion, d)
@@ -147,7 +162,6 @@ func main() {
 		discoveryStorage.Add(d)
 
 		if changed {
-
 			// Print this only if the server is already registered
 			if exists {
 				log.Printf("%s has been updated", d.Hostname)
@@ -179,6 +193,14 @@ func main() {
 
 	go printDiscoveryLogs()
 	go cleanDiscoveryPool()
+	go discoveryChangeLoop()
+	go changeCatcherLoop()
+
+	// When the daemon boots up we trigger discovery change event so the config can be setup via callback script if there is any
+	err = discoveryChange(server.Discovery{})
+	if err != nil {
+		log.Printf("discovery changed error: %v", err)
+	}
 
 	// If config.Register is false this instance won't be registered with other nodes
 	if config.Register {

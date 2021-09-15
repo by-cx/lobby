@@ -30,6 +30,9 @@ type Config struct {
 	TTL                   uint          `envconfig:"TTL" required:"false" default:"30"`                                 // After how many secs is discovery record considered as invalid
 	NodeExporterPort      uint          `envconfig:"NODE_EXPORTER_PORT" required:"false" default:"9100"`                // Default port where node_exporter listens on all registered servers
 	Register              bool          `envconfig:"REGISTER" required:"false" default:"true"`                          // If true (default) then local instance is registered with other instance (discovery packet is sent regularly)
+	Callback              string        `envconfig:"CALLBACK" required:"false" default:""`                              // path to a script that runs when the is a change in the labels database
+	CallbackCooldown      uint          `envconfig:"CALLBACK_COOLDOWN" required:"false" default:"15"`                   // cooldown that prevents to run the config change script too many times in row
+	CallbackFirstRunDelay uint          `envconfig:"CALLBACK_FIRST_RUN_DELAY" required:"false" default:"30"`            // Wait for this amount of seconds before callback is run for first time after fresh start of the daemon
 }
 
 // GetConfig return configuration created based on environment variables
