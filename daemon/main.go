@@ -193,8 +193,11 @@ func main() {
 
 	go printDiscoveryLogs()
 	go cleanDiscoveryPool()
-	go discoveryChangeLoop()
-	go changeCatcherLoop()
+
+	if len(config.Callback) > 0 {
+		go discoveryChangeLoop()
+		go changeCatcherLoop()
+	}
 
 	// When the daemon boots up we trigger discovery change event so the config can be setup via callback script if there is any
 	err = discoveryChange(server.Discovery{})
