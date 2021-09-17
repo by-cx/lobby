@@ -1,7 +1,10 @@
-# .woodpecker.yml
-pipeline:
-  test:
-    image: golang
-    commands:
-      - go mod tidy
-      - make test
+kind: pipeline
+type: docker
+name: testing
+
+steps:
+- name: test
+  image: golang
+  commands:
+    - go mod tidy
+    - make test
