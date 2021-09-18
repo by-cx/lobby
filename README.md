@@ -117,6 +117,12 @@ There are other config directives you can use to fine-tune lobbyd to exactly wha
 | CALLBACK_FIRST_RUN_DELAY | int    | 30                | no                | Wait for this amount of seconds before callback is run for first time after fresh start of the daemon                                                   |
 
 
+### Callback script
+
+When your application cannot support Lobbyd's API it can be configured via callback script that runs everytime something has changed in the network. Callback script is run every 15 seconds (configured by CALLBACK_COOLDOWN) but only when something has changed.
+
+The script runs under the same user as lobbyd. When lobbyd starts first thirty seconds (CALLBACK_FIRST_RUN_DELAY) is ignored and then the script is run for first time. After these thirty seconds everything runs in loop based on the changes in the network.
+
 ### Service discovery for Prometheus
 
 Lobbyd has an API endpoint that returns list of targets for [Prometheus's HTTP SD config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#http_sd_config). That
