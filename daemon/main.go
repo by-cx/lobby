@@ -204,7 +204,6 @@ func main() {
 	if err != nil {
 		log.Printf("discovery changed error: %v", err)
 	}
-
 	// If config.Register is false this instance won't be registered with other nodes
 	if config.Register {
 		// This is background process that sends the message
@@ -225,7 +224,6 @@ func main() {
 	} else {
 		log.Println("standalone mode, I won't register myself")
 	}
-
 	// --------
 	// REST API
 	// --------
@@ -237,10 +235,10 @@ func main() {
 	}
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-
 	// Routes
 	if !config.DisableAPI {
 		e.GET("/", listHandler)
+		e.GET("/v1/resolve", resolveHandler)
 		e.GET("/v1/discovery", getIdentificationHandler)
 		e.GET("/v1/discoveries", listHandler)
 		e.POST("/v1/labels", addLabelsHandler)
@@ -251,7 +249,6 @@ func main() {
 	// ------------------------------
 	// Termination signals processing
 	// ------------------------------
-
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
@@ -267,7 +264,6 @@ func main() {
 		}
 		e.Shutdown(context.TODO())
 	}(e, config)
-
 	// Start server
 	// In most cases this will end expectedly so it doesn't make sense to use the echo's approach to treat this message as an error.
 	e.Logger.Info(e.Start(config.Host + ":" + strconv.Itoa(int(config.Port))))

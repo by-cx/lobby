@@ -28,6 +28,20 @@ func listHandler(c echo.Context) error {
 	return c.JSONPretty(200, discoveries, "  ")
 }
 
+// resolveHandler returns hostname(s) based on another label
+func resolveHandler(c echo.Context) error {
+	label := c.QueryParam("label") // This is label we will use to filter discovery packets
+
+	output := []string{}
+
+	discoveries := discoveryStorage.Filter([]string{label})
+	for _, discovery := range discoveries {
+		output = append(output, discovery.Hostname)
+	}
+
+	return c.JSONPretty(http.StatusOK, output, "  ")
+}
+
 func prometheusHandler(c echo.Context) error {
 	name := c.Param("name")
 

@@ -45,9 +45,9 @@ func (d *Discovery) Bytes() ([]byte, error) {
 	return data, err
 }
 
-// FindLabels returns list of labels with given prefix. For example "service:ns" has prefix "service" or "service:".
+// FindLabelsByPrefix returns list of labels with given prefix. For example "service:ns" has prefix "service" or "service:".
 // It doesn't have to be prefix, but for example "service:test" will match "service:test" and also "service:test2".
-func (d *Discovery) FindLabels(prefix string) Labels {
+func (d *Discovery) FindLabelsByPrefix(prefix string) Labels {
 	labels := Labels{}
 	for _, label := range d.Labels {
 		if strings.HasPrefix(label.String(), prefix) {

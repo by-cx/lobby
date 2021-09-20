@@ -27,7 +27,7 @@ func TestDiscovery(t *testing.T) {
 	assert.False(t, discovery.IsAlive(), "discovery not suppose to be alive")
 	discovery.LastCheck = now
 
-	assert.Equal(t, Labels{Label("service:test")}, discovery.FindLabels("service"))
+	assert.Equal(t, Labels{Label("service:test")}, discovery.FindLabelsByPrefix("service"))
 	assert.Equal(t, nil, discovery.Validate()) // TODO: This needs more love
 
 	content, err := json.Marshal(&discovery)

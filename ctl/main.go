@@ -14,6 +14,7 @@ func Usage() {
 	flag.Usage()
 	fmt.Println("")
 	fmt.Println("Commands:")
+	fmt.Println("  resolve label                    returns list of hostnames with given label")
 	fmt.Println("  discovery                        returns discovery packet of the server where the client is connected to")
 	fmt.Println("  discoveries                      returns list of all registered discovery packets")
 	fmt.Println("  discoveries labels [LABEL] ...   returns list of all registered discovery packets with given labels (OR)")
@@ -68,6 +69,25 @@ func main() {
 	}
 
 	switch flag.Args()[0] {
+	case "resolve":
+		if len(flag.Args()) == 2 {
+			hostnames, err := client.Resolve(server.Label(flag.Arg(1)))
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if *jsonOutput {
+				printJSON(hostnames)
+			} else {
+				for _, hostname := range hostnames {
+					fmt.Println(hostname)
+				}
+			}
+		} else {
+			Usage()
+			os.Exit(0)
+		}
+
 	case "discoveries":
 		var discoveries []server.Discovery
 		var err error

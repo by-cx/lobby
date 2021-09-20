@@ -95,6 +95,8 @@ func discoveryChangeLoop() {
 // packet is somehow different than the localone. This can be used to trigger
 // some action in the local machine.
 func discoveryChange(discovery server.Discovery) error {
-	changeDetectedChannel <- true
+	if len(config.Callback) > 0 {
+		changeDetectedChannel <- true
+	}
 	return nil
 }

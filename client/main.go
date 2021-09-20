@@ -114,6 +114,31 @@ func (l *LobbyClient) GetDiscoveries() ([]server.Discovery, error) {
 	return discoveries, nil
 }
 
+// Resolve returns list of hostnames that have given label
+func (l *LobbyClient) Resolve(label server.Label) ([]string, error) {
+	l.init()
+
+	path := fmt.Sprintf("/v1/resolve?label=%s", label.String())
+	method := "GET"
+
+	var hostnames []string
+
+	status, body, err := l.call(method, path, "")
+	if err != nil {
+		return hostnames, err
+	}
+	if status != 200 {
+		return hostnames, fmt.Errorf("non-200 response: %s", body)
+	}
+
+	err = json.Unmarshal([]byte(body), &hostnames)
+	if err != nil {
+		return hostnames, fmt.Errorf("response parsing error: %v", err)
+	}
+
+	return hostnames, nil
+}
+
 // Find discoveries by their labels
 func (l *LobbyClient) FindByLabels(labels server.Labels) ([]server.Discovery, error) {
 	l.init()
