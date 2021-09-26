@@ -3,6 +3,7 @@ package nats_driver
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/by-cx/lobby/common"
 	"github.com/by-cx/lobby/server"
@@ -93,7 +94,14 @@ func (d *Driver) SendDiscoveryPacket(discovery server.Discovery) error {
 		return fmt.Errorf("sending discovery formating message error: %v", err)
 	}
 	err = d.nc.Publish(d.NATSDiscoveryChannel, data)
-	if err != nil {
+	// In case the connection is down we will try to reconnect
+	if err != nil && strings.Contains(err.Error(), "connection closed") {
+		d.nc.Close()
+		err = d.Init()
+		if err != nil {
+			return fmt.Errorf("sending discovery reconnect error: %v", err)
+		}
+	} else if err != nil {
 		return fmt.Errorf("sending discovery error: %v", err)
 	}
 	return nil
