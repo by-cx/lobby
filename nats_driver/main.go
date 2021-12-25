@@ -3,7 +3,9 @@ package nats_driver
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/by-cx/lobby/common"
 	"github.com/by-cx/lobby/server"
@@ -53,13 +55,20 @@ func (d *Driver) Init() error {
 		return fmt.Errorf("please initiate LogChannel variable")
 	}
 
-	nc, err := nats.Connect(d.NATSUrl)
-	if err != nil {
-		return err
-	}
-	d.nc = nc
+	var nc *nats.Conn
 
-	_, err = nc.Subscribe(d.NATSDiscoveryChannel, d.handler)
+	for {
+		nc, err := nats.Connect(d.NATSUrl)
+		if err != nil {
+			log.Println("Can't connect to the NATS server, waiting for 5 seconds before I try it again.")
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		d.nc = nc
+		break
+	}
+
+	_, err := nc.Subscribe(d.NATSDiscoveryChannel, d.handler)
 	if err != nil {
 		return err
 	}

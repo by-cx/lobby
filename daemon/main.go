@@ -35,7 +35,7 @@ func init() {
 	discoveryStorage.LogChannel = make(chan string)
 	discoveryStorage.TTL = config.TTL
 
-	// localhost initization
+	// localhost initiation
 	localHost = server.LocalHost{
 		LabelsPath:            config.LabelsPath,
 		HostnameOverride:      config.HostName,
