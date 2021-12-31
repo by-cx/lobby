@@ -55,12 +55,10 @@ func (d *Driver) Init() error {
 		return fmt.Errorf("please initiate LogChannel variable")
 	}
 
-	var nc *nats.Conn
-
 	for {
 		nc, err := nats.Connect(d.NATSUrl)
 		if err != nil {
-			log.Println("Can't connect to the NATS server, waiting for 5 seconds before I try it again.")
+			log.Printf("Can't connect to the NATS server, waiting for 5 seconds before I try it again. (%v)\n", err)
 			time.Sleep(time.Second * 5)
 			continue
 		}
@@ -68,9 +66,9 @@ func (d *Driver) Init() error {
 		break
 	}
 
-	_, err := nc.Subscribe(d.NATSDiscoveryChannel, d.handler)
+	_, err := d.nc.Subscribe(d.NATSDiscoveryChannel, d.handler)
 	if err != nil {
-		return err
+		return fmt.Errorf("subscribe error: %v", err)
 	}
 
 	return nil
