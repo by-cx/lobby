@@ -137,6 +137,8 @@ Let's check this:
 
 If you set port to *-* lobby daemon omits port entirely from the output.
 
+There can be multiple `host` labels but only one `port` label and all prometheus labels (last line) will be common for all hosts labels. If port is omitted then default 9100 is used or port can also be part of the host label.
+
 When you open URL http://localhost:1313/v1/prometheus/nodeexporter it returns this:
 
 ```json

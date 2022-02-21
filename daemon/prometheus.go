@@ -34,10 +34,10 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 
 	for _, discovery := range discoveries {
 		port := strconv.Itoa(int(config.NodeExporterPort))
-		host := discovery.Hostname
+		hosts := []string{}
 		var add bool // add to the prometheus output when there is at least one prometheus related label
 
-		labels := map[string]string{}
+		labels := map[string]string{} // These are prometheus labels, not Lobby's labels
 
 		for _, label := range discovery.FindLabelsByPrefix("prometheus:" + name + ":") {
 			trimmed := strings.TrimPrefix(label.String(), "prometheus:"+name+":")
@@ -46,7 +46,7 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 				if parts[0] == "port" {
 					port = parts[1]
 				} else if parts[0] == "host" {
-					host = parts[1]
+					hosts = append(hosts, parts[1])
 				} else {
 					labels[parts[0]] = parts[1]
 				}
@@ -65,20 +65,23 @@ func preparePrometheusOutput(name string, discoveries []server.Discovery) Promet
 		}
 
 		if add {
-			// Omit port part if "-" is set
-			target := host + ":" + port
-			if port == "-" {
-				target = host
-			}
+			targets := []string{}
+			for _, host := range hosts {
+				// Omit port part if "-" is set or port is part of the host
+				target := host + ":" + port
+				if strings.Contains(host, ":") || port == "-" {
+					target = host
+				}
+				targets = append(targets, target)
 
+			}
 			service := PrometheusService{
-				Targets: []string{target},
+				Targets: targets,
 				Labels:  labels,
 			}
 
 			services = append(services, service)
 		}
-
 	}
 
 	return services
